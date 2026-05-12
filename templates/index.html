@@ -1,0 +1,197 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Anexo 5 ASF - Generador</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    background: linear-gradient(135deg, #1F4E78 0%, #2E75B6 100%);
+    min-height: 100vh;
+    padding: 20px;
+    color: #333;
+  }
+  .container {
+    max-width: 600px;
+    margin: 20px auto;
+    background: white;
+    border-radius: 16px;
+    padding: 30px 25px;
+    box-shadow: 0 10px 40px rgba(0,0,0,0.2);
+  }
+  h1 {
+    color: #1F4E78;
+    font-size: 1.8em;
+    margin-bottom: 8px;
+  }
+  .subtitle {
+    color: #666;
+    margin-bottom: 25px;
+    font-size: 0.95em;
+  }
+  .field {
+    margin-bottom: 22px;
+  }
+  label {
+    display: block;
+    font-weight: 600;
+    margin-bottom: 8px;
+    color: #1F4E78;
+    font-size: 0.95em;
+  }
+  label .req { color: #c00; }
+  label .opt { color: #888; font-weight: 400; font-size: 0.85em; }
+  .help {
+    font-size: 0.85em;
+    color: #666;
+    margin-top: 4px;
+    line-height: 1.4;
+  }
+  input[type="file"], select {
+    width: 100%;
+    padding: 12px;
+    border: 2px solid #e0e0e0;
+    border-radius: 8px;
+    font-size: 1em;
+    background: #fafafa;
+  }
+  input[type="file"]:focus, select:focus {
+    outline: none;
+    border-color: #2E75B6;
+    background: white;
+  }
+  button {
+    width: 100%;
+    padding: 16px;
+    background: #1F4E78;
+    color: white;
+    border: none;
+    border-radius: 8px;
+    font-size: 1.1em;
+    font-weight: 600;
+    cursor: pointer;
+    margin-top: 10px;
+    transition: background 0.2s;
+  }
+  button:hover { background: #2E75B6; }
+  button:disabled { background: #999; cursor: wait; }
+  .flash {
+    padding: 12px;
+    border-radius: 8px;
+    margin-bottom: 20px;
+    background: #ffe0e0;
+    color: #900;
+    border-left: 4px solid #c00;
+  }
+  .info-box {
+    background: #f0f7ff;
+    border-left: 4px solid #2E75B6;
+    padding: 15px;
+    border-radius: 8px;
+    margin-bottom: 25px;
+    font-size: 0.9em;
+    color: #1F4E78;
+  }
+  .info-box strong { display: block; margin-bottom: 6px; }
+  .info-box ol { padding-left: 20px; margin-top: 6px; }
+  .info-box li { margin-bottom: 4px; }
+  .spinner {
+    display: none;
+    text-align: center;
+    margin-top: 20px;
+    color: #1F4E78;
+  }
+  .spinner.active { display: block; }
+  .spinner::after {
+    content: '';
+    display: inline-block;
+    width: 16px;
+    height: 16px;
+    border: 3px solid #ddd;
+    border-top-color: #1F4E78;
+    border-radius: 50%;
+    animation: spin 0.8s linear infinite;
+    margin-left: 8px;
+    vertical-align: middle;
+  }
+  @keyframes spin { to { transform: rotate(360deg); } }
+  footer {
+    text-align: center;
+    margin-top: 25px;
+    color: white;
+    font-size: 0.85em;
+    opacity: 0.85;
+  }
+</style>
+</head>
+<body>
+<div class="container">
+  <h1>📊 Generador Anexo 5 ASF</h1>
+  <p class="subtitle">Sube tus archivos y descarga el Anexo 5 lleno automáticamente</p>
+
+  {% with messages = get_flashed_messages(with_categories=true) %}
+    {% for category, msg in messages %}
+      <div class="flash">{{ msg }}</div>
+    {% endfor %}
+  {% endwith %}
+
+  <div class="info-box">
+    <strong>📋 Pasos:</strong>
+    <ol>
+      <li>Sube la <b>plantilla Anexo 5</b> vacía</li>
+      <li>Sube el <b>auxiliar de cuentas</b> del mes</li>
+      <li>Sube los <b>CFDIs</b> del mes (opcional, mejora los RFC)</li>
+      <li>Selecciona el <b>mes</b> y da clic en generar</li>
+    </ol>
+  </div>
+
+  <form id="anexoForm" method="POST" action="/generar" enctype="multipart/form-data">
+    <div class="field">
+      <label>Plantilla Anexo 5 (.xlsx) <span class="req">*</span></label>
+      <input type="file" name="template" accept=".xlsx" required>
+      <div class="help">Archivo base ASF. Siempre el mismo, no tiene datos.</div>
+    </div>
+
+    <div class="field">
+      <label>Auxiliar de Cuentas del mes (.xlsx) <span class="req">*</span></label>
+      <input type="file" name="auxiliar" accept=".xlsx" required>
+      <div class="help">Exportado del sistema contable, en xlsx (no PDF).</div>
+    </div>
+
+    <div class="field">
+      <label>CFDIs del mes (.xlsx) <span class="opt">— opcional</span></label>
+      <input type="file" name="cfdi" accept=".xlsx">
+      <div class="help">Si lo subes, los RFC se llenan automáticamente.</div>
+    </div>
+
+    <div class="field">
+      <label>Mes <span class="req">*</span></label>
+      <select name="mes" required>
+        <option value="">Selecciona...</option>
+        {% for m in meses %}
+          <option value="{{ m }}">{{ m|capitalize }}</option>
+        {% endfor %}
+      </select>
+    </div>
+
+    <button type="submit" id="btnSubmit">Generar Anexo 5</button>
+    <div class="spinner" id="spinner">Procesando archivos</div>
+  </form>
+</div>
+
+<footer>Anexo 5 ASF - Generador automático</footer>
+
+<script>
+  const form = document.getElementById('anexoForm');
+  const btn = document.getElementById('btnSubmit');
+  const spinner = document.getElementById('spinner');
+  form.addEventListener('submit', () => {
+    btn.disabled = true;
+    btn.textContent = 'Procesando...';
+    spinner.classList.add('active');
+  });
+</script>
+</body>
+</html>
